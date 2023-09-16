@@ -1,0 +1,39 @@
+==========================
+Welcome to Mini-BearTracks
+==========================
+
+What would you like to do?
+1. Print timetable
+2. Enroll in course
+3. Drop course
+4. Quit
+> 1
+
+Student ID: 000000
+Invalid student ID.  Cannot print timetable.
+
+What would you like to do?
+1. Print timetable
+2. Enroll in course
+3. Drop course
+4. Quit
+> 1
+
+Student ID: 123456
+Timetable for MARY LOU SOLEIMAN, in the faculty of SCI
+                 8:00         9:00        10:00        11:00        12:00        13:00        14:00        15:00        16:00    
+            +------------+------------+------------+------------+------------+------------+------------+------------+------------+
+Mon/Wed/Fri |  STAT 151  |  CMP* 175  |            |            |  MATH 101  |            |            |  ENGL 125  |            |
+            |    229     |    114     |            |            |     71     |            |            |     0      |            |
+            +--------------------------------------+--------------------------------------+--------------------------------------+
+ Tues/Thurs |                  ||     MATH 209     |                  ||     CMP* 272     |                  ||                  |
+            |                  ||       139        |                  ||       157        |                  ||                  |
+            +--------------------------------------+--------------------------------------+--------------------------------------+
+
+What would you like to do?
+1. Print timetable
+2. Enroll in course
+3. Drop course
+4. Quit
+> 4
+Goodbye
