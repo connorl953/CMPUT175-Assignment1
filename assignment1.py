@@ -219,6 +219,8 @@ def main():
         func = choices.get(choice)
         if choice == 2:
             func(students, courses)
+        elif choice == 4:
+            func("Goodbye")
         else:
             func(students)
 
@@ -259,23 +261,34 @@ def enroll_in_course(students, courses):
         return
 
     student = get_student_by_id(student_id, students)
-    course = input("Course name: ").strip().upper()
+    course_name = input("Course name: ").strip().upper()
 
-    status = check_course_conflict(student, course, courses)
-
-    if status == "OK":
-        student.enrolled_courses.append(course)
-    else:
-        print(status)
+    status = check_course_conflict(student, course_name, courses)
+    print(status)
 
 
-def check_course_conflict(student, course, course_list):
+def check_course_conflict(student, course_name, course_list):
     # TODO:
     # Check capacity of course
     # Check time conflict
 
-    if course not in course_list:
-        return "Invalid course name."
+    selected_course = None
+
+    for course in course_list:
+        if course.name.upper() == course_name:
+            selected_course = course
+
+    if selected_course is None:
+        return "Not real"
+
+    if selected_course in student.enrolled_courses:
+        return "Already enrolled"
+
+    if selected_course.capacity == 0:
+        return "Full"
+
+    
+
 
     return "Method not finished"
 
@@ -296,6 +309,7 @@ def drop_course(students):
     for course in student.enrolled_courses:
         if course.name.upper() == selected_course:
             student.enrolled_courses.remove(course)
+            course.capacity += 1
             student.timetable = generate_timetable(student)
 
 
@@ -349,9 +363,6 @@ def time_to_index(time_str):
     return index
 
 
-def quit():
-    print("Quitting...")
-
 
 def prompt():
     while True:
@@ -359,7 +370,7 @@ def prompt():
             choice = int(input("> "))
             if choice < 1 or choice > 4:
                 raise ValueError
-            print("Choice: " + str(choice))
+
             return choice
         except ValueError:
             print("Sorry, invalid entry. Please enter a choice from 1 to 4.")
