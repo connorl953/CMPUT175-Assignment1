@@ -2,10 +2,10 @@
 
 
 class Course:
-    def __init__(self, name, time, location):
+    def __init__(self, name, time, capacity):
         self.name = name  # i.e. COMP 151
         self.time = time  # i.e. MWF 9:00
-        self.location = location  # i.e. 156
+        self.capacity = int(capacity)  # i.e. 156
 
 
 class Student:
@@ -52,6 +52,9 @@ def create_empty_cell(chunk_width):
 def create_top_cell(class_name, class_location, chunk_width):
     string_builder = []
 
+    if len(class_name.split(" ")[0]) > 4:
+        class_name = class_name[0:3] + "* " + class_name.split(" ")[1]
+
     string_builder.append("" + class_name.center(chunk_width) + "|\n")
     string_builder.append(class_location.center(chunk_width) + "|\n")
     string_builder.append("".center(chunk_width) + "|\n|")
@@ -91,17 +94,16 @@ class TableRenderer:
                 block = table[y][x]
 
                 # MWF blocks start at y = 0, 2, 4, etc
-                # TR blocks start at y=0,3,6,9, etc
-                # Full lines attempted at y = 5 , 11, 17
-
                 if y % 2 == 0:
                     for i in range(0, 5, 2):
                         pretty_table[y + 1][i] = create_bottom_cell(chunk_width)
 
+                # TR blocks start at y=0, 3, 6, 9, etc
                 if y % 3 == 0:
                     for i in range(1, 4, 2):
                         pretty_table[y + 2][i] = create_bottom_cell(chunk_width)
 
+                # Full lines attempted at y = 5 , 11, 17
                 if (y + 1) % 6 == 0:
                     for i in range(5):
                         pretty_table[y][i] = create_special_bottom_cell(chunk_width)
@@ -122,14 +124,9 @@ class TableRenderer:
                     if (pretty_table[y][x]) == "":
                         pretty_table[y][x] = create_empty_cell(chunk_width)
 
-            for i in range(5):
-                pretty_table[-1][i] = create_special_bottom_cell(chunk_width)
-
         return pretty_table
 
     def print_pretty_table(self):
-
-        # TODO: Add times and dates to table
 
         print("".ljust(5) + "    Mon        Tues       Wed       Thurs       Fri    ")
         print("".ljust(5) + "+----------+----------+----------+----------+----------+")
@@ -144,13 +141,14 @@ class TableRenderer:
                 time_index += 1
             else:
                 print("".ljust(5), end="")
+
             if "+" in self.pretty_table[row][1].split("\n")[line - (row * 3)]:
                 print("+", end="")
             else:
                 print("|", end="")
+
             for string in self.pretty_table[row]:
                 print(string.split("\n")[line - (row * 3)], end="")
-                last = string
             line += 1
             print()
             if line % 3 == 0:
@@ -170,11 +168,8 @@ def main():
             for line in f:
                 line = line.strip()
                 line = line.split(";")
-
                 course = Course(line[0].strip(), line[1].strip(), line[2].strip())
                 courses.append(course)
-                for course in courses:
-                    print("course added: " + course.name + " " + course.time + " " + course.location)
 
         # Parse students from students.txt in following format: 123456, SCI , Mary Lou Soleiman
         # Add enrolledCourses from enrollment.txt to student objects in the following format: CMPUT 175: 123456
@@ -184,7 +179,6 @@ def main():
                 line = line.strip()
                 line = line.split(",")
                 student = Student(line[2].strip(), line[0].strip(), line[1].strip())
-                print("student added: " + student.name + " " + student.student_id + " " + student.program)
                 with open("enrollment.txt", "r") as f2:
                     for line2 in f2:
                         line2 = line2.strip()
@@ -195,7 +189,7 @@ def main():
                             for course in courses:
                                 if course_name == course.name:
                                     student.enrolled_courses.append(course)
-                                    print("student " + student.name + " enrolled in " + course.name)
+                                    course.capacity -= 1
 
                 student.timetable = generate_timetable(student)
                 students.append(student)
@@ -203,35 +197,106 @@ def main():
     except FileNotFoundError:
         print("Error: File does not exist")
 
-    print("==========================")
-    print("Welcome to Mini-BearTracks")
-    print("==========================")
-    print("What would you like to do?")
-    print("1. Print timetable")
-    print("2. Enroll in course")
-    print("3. Drop course")
-    print("4. Quit")
-    choice = prompt()
-    # Dictionary mapping, where the key is the choice and the value is the function to call
+    while True:
+        print("==========================")
+        print("Welcome to Mini-BearTracks")
+        print("==========================")
+        print("What would you like to do?")
+        print("1. Print timetable")
+        print("2. Enroll in course")
+        print("3. Drop course")
+        print("4. Quit")
 
-    choices = {
-        '1': print_timetable,
-        '2': enroll_in_course,
-        '3': drop_course,
-        '4': quit,
-    }
-    func = choices.get(str(choice))
-    func(students)
+        choice = prompt()
+
+        # Dictionary where the key is the choice and the value is the function to call, emulates Java switch notation
+        choices = {
+            1: print_timetable,
+            2: enroll_in_course,
+            3: drop_course,
+            4: quit,
+        }
+        func = choices.get(choice)
+        if choice == 2:
+            func(students, courses)
+        else:
+            func(students)
 
 
 def print_timetable(students):
-    student_id = input("Enter student ID: ").strip()
-    for student in students:
-        if student.student_id == student_id:
-            print("Printing timetable for " + student.name + "...")
+    student_id = get_student_id(students)
 
-            table_renderer = TableRenderer(student.timetable, 10)
-            table_renderer.render_table()
+    if student_id == "-1":
+        print("Invalid student ID.  Cannot print timetable.")
+        return
+
+    student = get_student_by_id(student_id, students)
+    table_renderer = TableRenderer(student.timetable, 10)
+    table_renderer.render_table()
+
+
+def get_student_by_id(id, students):
+    for student in students:
+        if student.student_id == id:
+            return student
+
+
+def get_student_id(student_list):
+    student_id = input("Enter student ID: ").strip()
+
+    for student in student_list:
+        if student.student_id == student_id:
+            return student_id
+    return "-1"
+
+
+# TODO: finish this method
+def enroll_in_course(students, courses):
+    student_id = get_student_id(students)
+
+    if student_id == "-1":
+        print("Invalid student ID. Cannot continue with course enrollment.")
+        return
+
+    student = get_student_by_id(student_id, students)
+    course = input("Course name: ").strip().upper()
+
+    status = check_course_conflict(student, course, courses)
+
+    if status == "OK":
+        student.enrolled_courses.append(course)
+    else:
+        print(status)
+
+
+def check_course_conflict(student, course, course_list):
+    # TODO:
+    # Check capacity of course
+    # Check time conflict
+
+    if course not in course_list:
+        return "Invalid course name."
+
+    return "Method not finished"
+
+
+def drop_course(students):
+    student_id = get_student_id(students)
+    if student_id == "-1":
+        print("Invalid student ID. Cannot continue with course drop.")
+        return
+
+    print("Select course to drop:")
+    student = get_student_by_id(student_id, students)
+    for course in student.enrolled_courses:
+        print(course.name)
+
+    selected_course = input("> ").strip().upper()
+
+    for course in student.enrolled_courses:
+        if course.name.upper() == selected_course:
+            student.enrolled_courses.remove(course)
+            student.timetable = generate_timetable(student)
 
 
 def generate_timetable(student):
@@ -258,19 +323,16 @@ def generate_timetable(student):
         course_name = course.name
         course_days = course.time.split(" ")[0]  # string like MWF
         course_time = course.time.split(" ")[1]  # string like 14:00
-        course_location = course.location
+        course_capacity = str(course.capacity)
         time_index = time_to_index(course_time)
 
-        print("time index: " + str(time_index))
-        print(course_name + " " + course_days + " " + str(course_time) + " " + course_location)
-
         if course_days == "MWF":
-            timetable[time_index][0] = course_name + " " + course_location
-            timetable[time_index][2] = course_name + " " + course_location
-            timetable[time_index][4] = course_name + " " + course_location
+            timetable[time_index][0] = course_name + " " + course_capacity
+            timetable[time_index][2] = course_name + " " + course_capacity
+            timetable[time_index][4] = course_name + " " + course_capacity
         elif course_days == "TR":
-            timetable[time_index][1] = course_name + " " + course_location
-            timetable[time_index][3] = course_name + " " + course_location
+            timetable[time_index][1] = course_name + " " + course_capacity
+            timetable[time_index][3] = course_name + " " + course_capacity
         else:
             pass
 
@@ -285,14 +347,6 @@ def time_to_index(time_str):
         index += 1
 
     return index
-
-
-def enroll_in_course():
-    print("Enrolling in course...")
-
-
-def drop_course():
-    print("Dropping course...")
 
 
 def quit():
