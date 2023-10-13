@@ -2,10 +2,11 @@
 
 
 class Course:
-    def __init__(self, name, time, capacity):
+    def __init__(self, name, time, capacity, teacher):
         self.name = name  # i.e. COMP 151
         self.time = time  # i.e. MWF 9:00
         self.capacity = int(capacity)  # i.e. 156
+        self.teacher = teacher
 
 
 class Student:
@@ -74,54 +75,76 @@ class TableRenderer:
         self.table = table
         self.pretty_table = self.create_pretty_table(chunk_width)
 
-    """
-    Renders the timetable to the console,
-
-    self.table is a 2D list of strings, 5 across and 18 down.
-    Each string is a course name and location, or an empty string.
-
-    """
-
     def render_table(self):
+        """
+        Renders the timetable to the console,
+
+        self.table is a 2D list of strings, 5 across and 18 down.
+        Each string is a course name and location, or an empty string.
+
+        """
         self.print_pretty_table()
         pass
 
     def create_pretty_table(self, chunk_width):
+        """
+        This method creates a 'pretty table' with specific formatting rules. The table is initially filled with empty strings.
+        Then, for each block in the original table, it applies different formatting rules depending on the position of the block
+        and the day of the week it represents (Monday, Wednesday, Friday or Tuesday, Thursday).
+
+        The method uses helper functions to create different types of cells: top cells, bottom cells, special bottom cells,
+        and empty cells. Each cell is created with a specified chunk width.
+
+        This method was chosen over the line-by-line approach because it is more modular, readable, efficient, and flexible.
+
+
+        The pretty table is returned as a 2D list of strings.
+
+        Parameters:
+            chunk_width (int): The width of each cell in the pretty table.
+
+        Returns:
+            pretty_table (list): A 2D list of strings representing the pretty table.
+        """
         pretty_table = [["" for _ in range(5)] for _ in range(18)]
         table = self.table
         for y in range(len(self.table)):  # foreach row in table, but with indexes.
             for x in range(len(table[y])):  # foreach block in row, but with indexes.
                 block = table[y][x]
+                # Grab the block from the student's timetable (this holds the data for the pretty table)
 
                 # MWF blocks start at y = 0, 2, 4, etc
                 if y % 2 == 0:
                     for i in range(0, 5, 2):
                         pretty_table[y + 1][i] = create_bottom_cell(chunk_width)
 
-                # TR blocks start at y=0, 3, 6, 9, etc
+                # TR blocks start at y = 0, 3, 6, 9, etc
                 if y % 3 == 0:
                     for i in range(1, 4, 2):
                         pretty_table[y + 2][i] = create_bottom_cell(chunk_width)
 
-                # Full lines attempted at y = 5 , 11, 17
+                # Full special lines attempted at y = 5 , 11, 17
                 if (y + 1) % 6 == 0:
                     for i in range(5):
                         pretty_table[y][i] = create_special_bottom_cell(chunk_width)
 
-                if block != "":
+                if block != "":  # if the block is not empty, then it must be a course
+                    course_name = block.split(" ")[0]
+                    course_number = block.split(" ")[1]
+                    course_capacity = block.split(" ")[2]
                     if x % 2 == 0:  # if x is even, then it must be monday wednesday or friday
-                        pretty_table[y][x] = create_top_cell(block.split(" ")[0] + " " + block.split(" ")[1],
-                                                             block.split(" ")[2], chunk_width)
+                        pretty_table[y][x] = create_top_cell(course_name + " " + course_number,
+                                                             course_capacity, chunk_width)
                         pretty_table[y + 1][x] = create_bottom_cell(chunk_width)
                     elif x % 2 == 1:  # if not, then it must be tuesday or thursday
-                        pretty_table[y][x] = create_top_cell(block.split(" ")[0] + " " + block.split(" ")[1],
-                                                             block.split(" ")[2], chunk_width)
+                        pretty_table[y][x] = create_top_cell(course_name + " " + course_number,
+                                                             course_capacity, chunk_width)
                         pretty_table[y + 1][x] = create_empty_cell(chunk_width)
                         pretty_table[y + 2][x] = create_bottom_cell(chunk_width)
-                    if y > 0:
+                    if y > 0:  # if not the first row, and is a course, then the previous row must be a bottom cell
                         pretty_table[y - 1][x] = create_bottom_cell(chunk_width)
                 else:
-                    if (pretty_table[y][x]) == "":
+                    if (pretty_table[y][x]) == "":  # final check to make sure the pretty cell is not truly empty
                         pretty_table[y][x] = create_empty_cell(chunk_width)
 
         return pretty_table
@@ -136,7 +159,8 @@ class TableRenderer:
         while line < len(self.pretty_table) * 3:
             # Treat the 2d array as a giant string, ignoring newlines,
             # and iterate through every line
-            if line % 3 == 0:  # There are always 3 newlines in every "cell", print the time next to the start of every cell
+            if line % 3 == 0:  # There are always 3 lines in every "cell",
+                # print the time next to the start of every cell
                 print(index_to_time(time_index).ljust(5), end="")
                 time_index += 1
             else:
@@ -157,6 +181,10 @@ class TableRenderer:
 
 
 def main():
+    # Afternote: I chose to use student and course objects in their own lists because the object-oriented approach is
+    # more scalable and easier to maintain than using a complicated web of lists and dictionaries. More importantly,
+    # it avoids the complexity that could arise from managing interconnected lists and dictionaries.
+
     # Initialize list of students
     students = []
     # Initialize list of courses
@@ -164,22 +192,22 @@ def main():
     try:
         # Parse courses from courses.txt in following format: CMPUT 101; TR 14:00; 156; Marianne Morris,
         # with 156 being the room number
-        with open("courses.txt", "r") as f:
+        with open("courses_new.txt", "r") as f:
             for line in f:
                 line = line.strip()
                 line = line.split(";")
-                course = Course(line[0].strip(), line[1].strip(), line[2].strip())
+                course = Course(line[0].strip(), line[1].strip(), line[2].strip(), line[3].strip())
                 courses.append(course)
 
         # Parse students from students.txt in following format: 123456, SCI , Mary Lou Soleiman
         # Add enrolledCourses from enrollment.txt to student objects in the following format: CMPUT 175: 123456
 
-        with open("students.txt", "r") as f:
+        with open("students_new.txt", "r") as f:
             for line in f:
                 line = line.strip()
                 line = line.split(",")
                 student = Student(line[2].strip(), line[0].strip(), line[1].strip())
-                with open("enrollment.txt", "r") as f2:
+                with open("enrollment_new.txt", "r") as f2:
                     for line2 in f2:
                         line2 = line2.strip()
                         line2 = line2.split(":")
@@ -193,43 +221,48 @@ def main():
 
                 student.timetable = generate_timetable(student)
                 students.append(student)
-
     except FileNotFoundError:
         print("Error: File does not exist")
 
-    while True:
-        print("==========================")
-        print("Welcome to Mini-BearTracks")
-        print("==========================")
-        print("What would you like to do?")
-        print("1. Print timetable")
-        print("2. Enroll in course")
-        print("3. Drop course")
-        print("4. Quit")
+    try:
+        while True:
+            print("==========================")
+            print("Welcome to Mini-BearTracks")
+            print("==========================")
+            print("What would you like to do?")
+            print("1. Print timetable")
+            print("2. Enroll in course")
+            print("3. Drop course")
+            print("4. Quit")
 
-        choice = prompt()
+            choice = prompt()
 
-        # Dictionary where the key is the choice and the value is the function to call, emulates Java switch notation
-        choices = {
-            1: print_timetable,
-            2: enroll_in_course,
-            3: drop_course,
-            4: quit,
-        }
-        func = choices.get(choice)
-        if choice == 2:
-            func(students, courses)
-        elif choice == 4:
-            func("Goodbye")
-        else:
-            func(students)
+            # Dictionary where the key is the choice and the value is the function to call, emulates Java switch
+            # notation
+            choices = {
+                1: print_timetable,
+                2: enroll_in_course,
+                3: drop_course,
+                4: quit,
+            }
+            func = choices.get(choice)
+            if choice == 2 or choice == 3:
+                func(students, courses)
+            elif choice == 4:
+                save_data(students, courses)
+                func("Goodbye")
+            else:
+                func(students)
+    except KeyboardInterrupt:
+        save_data(students, courses)
+        print("Goodbye")
 
 
 def print_timetable(students):
     student_id = get_student_id(students)
 
     if student_id == "-1":
-        print("Invalid student ID.  Cannot print timetable.")
+        print("Invalid student ID. Cannot print timetable.")
         return
 
     student = get_student_by_id(student_id, students)
@@ -264,7 +297,16 @@ def enroll_in_course(students, courses):
     course_name = input("Course name: ").strip().upper()
 
     status = check_course_conflict(student, course_name, courses)
-    print(status)
+    if status == "OK":
+        for course in courses:
+            if course.name.upper() == course_name:
+                student.enrolled_courses.append(course)
+                course.capacity -= 1
+                student.timetable = generate_timetable(student)
+                print("Course ", course.name, " enrolled successfully.")
+                return
+    else:
+        print("Cannot enroll in course. Reason: " + status)
 
 
 def check_course_conflict(student, course_name, course_list):
@@ -279,21 +321,18 @@ def check_course_conflict(student, course_name, course_list):
             selected_course = course
 
     if selected_course is None:
-        return "Not real"
+        return "Course \"" + course_name + "\" does not exist"
 
     if selected_course in student.enrolled_courses:
-        return "Already enrolled"
+        return "Student \"" + student.name + "\" is already enrolled in course \"" + course_name + "\""
 
-    if selected_course.capacity == 0:
+    if selected_course.capacity < 1:
         return "Full"
 
-    
+    return "OK"
 
 
-    return "Method not finished"
-
-
-def drop_course(students):
+def drop_course(students, courses):
     student_id = get_student_id(students)
     if student_id == "-1":
         print("Invalid student ID. Cannot continue with course drop.")
@@ -305,12 +344,62 @@ def drop_course(students):
         print(course.name)
 
     selected_course = input("> ").strip().upper()
+    droppable_status = check_course_droppable(student, selected_course, courses)
+    if droppable_status == "OK":
+        for course in student.enrolled_courses:
+            if course.name.upper() == selected_course:
+                student.enrolled_courses.remove(course)
+                course.capacity += 1
+                student.timetable = generate_timetable(student)
+                print("Course ", course.name, " dropped successfully.")
+    else:
+        print("Cannot drop course. Reason: " + droppable_status)
 
-    for course in student.enrolled_courses:
-        if course.name.upper() == selected_course:
-            student.enrolled_courses.remove(course)
+
+def check_course_droppable(student, course_name, course_list):
+    selected_course = None
+
+    for course in course_list:
+        if course.name.upper() == course_name:
+            selected_course = course
+
+    if selected_course is None:
+        return "Course \"" + course_name + "\" does not exist"
+
+    if selected_course not in student.enrolled_courses:
+        return "Student \"" + student.name + "\" is not enrolled in course \"" + course_name + "\""
+
+    return "OK"
+
+
+def save_data(students, courses):
+    # Save enrollment data to enrollment.txt, example line: CMPUT 175: 123456
+    # Save course data to courses.txt, example line: CMPUT 101; TR 14:00; 156; Marianne Morris
+    # Save student data to students.txt, example line: 123456, SCI , Mary Lou Soleiman
+
+    # Save enrollment data
+    with open("enrollment_new.txt", "w") as f:
+        for student in students:
+            for course in student.enrolled_courses:
+                f.write(course.name + ": " + student.student_id + "\n")
+
+    for student in students:  # Reset course capacities
+        for course in student.enrolled_courses:
             course.capacity += 1
-            student.timetable = generate_timetable(student)
+
+    # Save course data
+    with open("courses_new.txt", "w") as f:
+        for course in courses:
+            f.write(course.name + "; " + course.time + "; " + str(course.capacity) + "; " + str(course.teacher) + "\n")
+
+    for student in students:  # Re-enroll students after saving true course capacities
+        for course in student.enrolled_courses:
+            course.capacity -= 1
+
+    # Save student data
+    with open("students_new.txt", "w") as f:
+        for student in students:
+            f.write(student.student_id + ", " + student.program + ", " + student.name + "\n")
 
 
 def generate_timetable(student):
@@ -330,6 +419,8 @@ def generate_timetable(student):
         e. If the course is on a weekend, do nothing.
         f. Repeat step b for each course in the student's enrolledCourses list.
      4. Return the timetable.
+
+     :returns: A 2D array representing the student's timetable.
      """
 
     timetable = [["" for _ in range(5)] for _ in range(18)]
@@ -361,7 +452,6 @@ def time_to_index(time_str):
         index += 1
 
     return index
-
 
 
 def prompt():
