@@ -185,10 +185,14 @@ def main():
     # more scalable and easier to maintain than using a complicated web of lists and dictionaries. More importantly,
     # it avoids the complexity that could arise from managing interconnected lists and dictionaries.
 
+
     # Initialize list of students
     students = []
     # Initialize list of courses
     courses = []
+
+    # These are not parallel lists; they are independent of each other.
+
     try:
         # Parse courses from courses.txt in following format: CMPUT 101; TR 14:00; 156; Marianne Morris,
         # with 156 being the room number
@@ -285,7 +289,6 @@ def get_student_id(student_list):
     return "-1"
 
 
-# TODO: finish this method
 def enroll_in_course(students, courses):
     student_id = get_student_id(students)
 
@@ -310,9 +313,7 @@ def enroll_in_course(students, courses):
 
 
 def check_course_conflict(student, course_name, course_list):
-    # TODO:
-    # Check capacity of course
-    # Check time conflict
+
 
     selected_course = None
 
@@ -327,7 +328,22 @@ def check_course_conflict(student, course_name, course_list):
         return "Student \"" + student.name + "\" is already enrolled in course \"" + course_name + "\""
 
     if selected_course.capacity < 1:
-        return "Full"
+        return "Selected course is full"
+
+    for course in student.enrolled_courses:
+        days = course.time.split(" ")[0]
+        time_index = time_to_index(course.time.split(" ")[1])
+        selected_course_days = selected_course.time.split(" ")[0]
+        selected_course_time_index = time_to_index(selected_course.time.split(" ")[1])
+        if days == selected_course_days:
+            if days == "MWF":
+                if abs(time_index - selected_course_time_index) < 2:
+                    return "Selected course conflicts with course \"" + course.name + "\""
+            elif days == "TR":
+                if abs(time_index - selected_course_time_index) < 3:
+                    return "Selected course conflicts with course \"" + course.name + "\""
+
+
 
     return "OK"
 
