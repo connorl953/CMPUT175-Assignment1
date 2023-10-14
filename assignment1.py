@@ -96,7 +96,7 @@ class TableRenderer:
         and empty cells. Each cell is created with a specified chunk width.
 
         This method was chosen over the line-by-line approach because it is more modular, readable, efficient, and flexible.
-
+        Despite this, the table is still rendered line-by-line in the print_pretty_table() method.
 
         The pretty table is returned as a 2D list of strings.
 
@@ -185,7 +185,6 @@ def main():
     # more scalable and easier to maintain than using a complicated web of lists and dictionaries. More importantly,
     # it avoids the complexity that could arise from managing interconnected lists and dictionaries.
 
-
     # Initialize list of students
     students = []
     # Initialize list of courses
@@ -196,37 +195,42 @@ def main():
     try:
         # Parse courses from courses.txt in following format: CMPUT 101; TR 14:00; 156; Marianne Morris,
         # with 156 being the room number
-        with open("courses_new.txt", "r") as f:
+        with open("courses.txt", "r") as f:
             for line in f:
-                line = line.strip()
-                line = line.split(";")
-                course = Course(line[0].strip(), line[1].strip(), line[2].strip(), line[3].strip())
-                courses.append(course)
+                if len(line) > 1:
+                    line = line.strip()
+                    line = line.split(";")
+                    course = Course(line[0].strip(), line[1].strip(), line[2].strip(), line[3].strip())
+                    courses.append(course)
 
         # Parse students from students.txt in following format: 123456, SCI , Mary Lou Soleiman
         # Add enrolledCourses from enrollment.txt to student objects in the following format: CMPUT 175: 123456
 
-        with open("students_new.txt", "r") as f:
+        with open("students.txt", "r") as f:
             for line in f:
-                line = line.strip()
-                line = line.split(",")
-                student = Student(line[2].strip(), line[0].strip(), line[1].strip())
-                with open("enrollment_new.txt", "r") as f2:
-                    for line2 in f2:
-                        line2 = line2.strip()
-                        line2 = line2.split(":")
-                        student_id = line2[1].strip()
-                        course_name = line2[0].strip()
-                        if student_id == student.student_id:
-                            for course in courses:
-                                if course_name == course.name:
-                                    student.enrolled_courses.append(course)
-                                    course.capacity -= 1
+                if len(line) > 1:
+                    line = line.strip()
+                    line = line.split(",")
+                    student = Student(line[2].strip(), line[0].strip(), line[1].strip())
+                    with open("enrollment.txt", "r") as f2:
+                        for line2 in f2:
+                            if len(line2) > 1:
+                                line2 = line2.strip()
+                                line2 = line2.split(":")
+                                student_id = line2[1].strip()
+                                course_name = line2[0].strip()
+                                if student_id == student.student_id:
+                                    for course in courses:
+                                        if course_name == course.name:
+                                            student.enrolled_courses.append(course)
+                                            course.capacity -= 1
 
                 student.timetable = generate_timetable(student)
                 students.append(student)
     except FileNotFoundError:
         print("Error: File does not exist")
+    except IndexError:
+        raise Exception("File is not formatted correctly. (Are you missing a seperator?)")
 
     try:
         while True:
@@ -270,6 +274,8 @@ def print_timetable(students):
         return
 
     student = get_student_by_id(student_id, students)
+    print("Timetable for " + student.name + ", in the faculty of " + student.program + ":")
+
     table_renderer = TableRenderer(student.timetable, 10)
     table_renderer.render_table()
 
@@ -281,7 +287,7 @@ def get_student_by_id(id, students):
 
 
 def get_student_id(student_list):
-    student_id = input("Enter student ID: ").strip()
+    student_id = input("Student ID: ").strip()
 
     for student in student_list:
         if student.student_id == student_id:
@@ -299,22 +305,20 @@ def enroll_in_course(students, courses):
     student = get_student_by_id(student_id, students)
     course_name = input("Course name: ").strip().upper()
 
-    status = check_course_conflict(student, course_name, courses)
+    status = check_course_enrollable(student, course_name, courses)
     if status == "OK":
         for course in courses:
             if course.name.upper() == course_name:
                 student.enrolled_courses.append(course)
                 course.capacity -= 1
                 student.timetable = generate_timetable(student)
-                print("Course ", course.name, " enrolled successfully.")
+                print(student.name + " has successfully been enrolled in " + course.name + ", on " + course.time + ".")
                 return
     else:
-        print("Cannot enroll in course. Reason: " + status)
+        print(status)
 
 
-def check_course_conflict(student, course_name, course_list):
-
-
+def check_course_enrollable(student, course_name, course_list):
     selected_course = None
 
     for course in course_list:
@@ -325,10 +329,10 @@ def check_course_conflict(student, course_name, course_list):
         return "Course \"" + course_name + "\" does not exist"
 
     if selected_course in student.enrolled_courses:
-        return "Student \"" + student.name + "\" is already enrolled in course \"" + course_name + "\""
+        return "Schedule conflict: already registered for course on " + selected_course.time.split(" ")[0]
 
     if selected_course.capacity < 1:
-        return "Selected course is full"
+        return "Cannot enroll." + course_name + " is already at capacity. Please contact advisor to get on waiting list."
 
     for course in student.enrolled_courses:
         days = course.time.split(" ")[0]
@@ -338,12 +342,10 @@ def check_course_conflict(student, course_name, course_list):
         if days == selected_course_days:
             if days == "MWF":
                 if abs(time_index - selected_course_time_index) < 2:
-                    return "Selected course conflicts with course \"" + course.name + "\""
+                    return "Selected course conflicts with course \"" + course.name + "\" on " + course.time
             elif days == "TR":
                 if abs(time_index - selected_course_time_index) < 3:
-                    return "Selected course conflicts with course \"" + course.name + "\""
-
-
+                    return "Selected course conflicts with course \"" + course.name + "\" on " + course.time
 
     return "OK"
 
@@ -367,9 +369,9 @@ def drop_course(students, courses):
                 student.enrolled_courses.remove(course)
                 course.capacity += 1
                 student.timetable = generate_timetable(student)
-                print("Course ", course.name, " dropped successfully.")
+                print(student.name + " has successfully dropped " + course.name + ".")
     else:
-        print("Cannot drop course. Reason: " + droppable_status)
+        print(droppable_status)
 
 
 def check_course_droppable(student, course_name, course_list):
@@ -380,7 +382,7 @@ def check_course_droppable(student, course_name, course_list):
             selected_course = course
 
     if selected_course is None:
-        return "Course \"" + course_name + "\" does not exist"
+        return "Drop failed. " + student.name + " is not currently registered in " + course_name + "."
 
     if selected_course not in student.enrolled_courses:
         return "Student \"" + student.name + "\" is not enrolled in course \"" + course_name + "\""
