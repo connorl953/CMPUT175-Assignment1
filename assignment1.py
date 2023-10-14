@@ -1,5 +1,10 @@
+#----------------------------------------------------
+# Assignment 1: Mini Bear Tracks
+# Purpose of program: To roughly emulate UAlberta's Bear Tracks system.
+#
 # Author: Connor Li
-
+# Collaborators/references: None
+#----------------------------------------------------
 
 class Course:
     def __init__(self, name, time, capacity, teacher):
@@ -84,7 +89,6 @@ class TableRenderer:
 
         """
         self.print_pretty_table()
-        pass
 
     def create_pretty_table(self, chunk_width):
         """
@@ -150,7 +154,13 @@ class TableRenderer:
         return pretty_table
 
     def print_pretty_table(self):
+        """
+        This function is used with the create_pretty_table() function to render the timetable to the console.
 
+        Renders the timetable to the console line-by-line using the pre-made pretty table.
+
+        This function does not return anything.
+        """
         print("".ljust(5) + "    Mon        Tues       Wed       Thurs       Fri    ")
         print("".ljust(5) + "+----------+----------+----------+----------+----------+")
         time_index = 16
@@ -177,7 +187,7 @@ class TableRenderer:
             print()
             if line % 3 == 0:
                 row += 1
-        pass
+
 
 
 def main():
@@ -267,7 +277,19 @@ def main():
 
 
 def print_timetable(students):
-    student_id = get_student_id(students)
+    """
+    Prints the timetable for a given student.
+
+    The function first gets the student ID from the list of students. If the student ID is invalid, it prints an error message and returns.
+    Otherwise, it retrieves the student details using the student ID and prints the student's timetable.
+
+    Args:
+        students (list): The list of students.
+
+    Returns:
+        None
+    """
+    student_id = get_student_id_input(students)
 
     if student_id == "-1":
         print("Invalid student ID. Cannot print timetable.")
@@ -286,9 +308,8 @@ def get_student_by_id(id, students):
             return student
 
 
-def get_student_id(student_list):
+def get_student_id_input(student_list):
     student_id = input("Student ID: ").strip()
-
     for student in student_list:
         if student.student_id == student_id:
             return student_id
@@ -296,7 +317,7 @@ def get_student_id(student_list):
 
 
 def enroll_in_course(students, courses):
-    student_id = get_student_id(students)
+    student_id = get_student_id_input(students)
 
     if student_id == "-1":
         print("Invalid student ID. Cannot continue with course enrollment.")
@@ -319,6 +340,20 @@ def enroll_in_course(students, courses):
 
 
 def check_course_enrollable(student, course_name, course_list):
+    """
+    Checks if a student is eligible to enroll in a given course.
+
+    This function checks if the course exists, if the student is already enrolled in the course, if the course is at capacity,
+    and if the course time conflicts with the times of other courses the student is enrolled in.
+
+    Args:
+        student (Student): The student attempting to enroll in the course.
+        course_name (str): The name of the course the student is attempting to enroll in.
+        course_list (list): The list of all available courses.
+
+    Returns:
+        str: A message indicating whether the student can enroll in the course or the reason why they cannot.
+    """
     selected_course = None
 
     for course in course_list:
@@ -351,7 +386,22 @@ def check_course_enrollable(student, course_name, course_list):
 
 
 def drop_course(students, courses):
-    student_id = get_student_id(students)
+    """
+    Drops a course for a student.
+
+    This function first gets the student ID from the user. If the ID is invalid, it prints an error message and returns.
+    Then, it prompts the user to select a course to drop from the student's enrolled courses.
+    If the selected course can be dropped, it removes the course from the student's enrolled courses, increases the course's capacity by 1,
+    regenerates the student's timetable, and prints a success message. If the course cannot be dropped, it prints an error message.
+
+    Args:
+        students (list): The list of students.
+        courses (list): The list of courses.
+
+    Returns:
+        None
+    """
+    student_id = get_student_id_input(students)
     if student_id == "-1":
         print("Invalid student ID. Cannot continue with course drop.")
         return
@@ -375,6 +425,23 @@ def drop_course(students, courses):
 
 
 def check_course_droppable(student, course_name, course_list):
+    """
+    Checks if a student can drop a course from their enrolled courses.
+
+    This function first checks if the course exists in the course list. If the course does not exist, it returns a message indicating that the student is not registered in the course.
+
+    Then, it checks if the student is enrolled in the course. If the student is not enrolled in the course, it returns a message indicating that the student is not enrolled in the course.
+
+    If the student is enrolled in the course and the course exists, it returns "OK".
+
+    Args:
+        student (object): The student object.
+        course_name (str): The name of the course to be dropped.
+        course_list (list): The list of all courses.
+
+    Returns:
+        str: A message indicating whether the student can drop the course or not.
+    """
     selected_course = None
 
     for course in course_list:
@@ -391,12 +458,28 @@ def check_course_droppable(student, course_name, course_list):
 
 
 def save_data(students, courses):
+    """
+    Saves student, course, and enrollment data to respective text files.
+
+    This function saves the enrollment data to 'enrollment.txt', course data to 'courses.txt', and student data to 'students.txt'.
+    The function also adjusts the course capacities to reflect the number of enrolled students.
+
+    Args:
+        students (list): A list of Student objects.
+        courses (list): A list of Course objects.
+
+    Files Accessed:
+        enrollment.txt: Contains enrollment data in the format 'Course Name: Student ID'.
+        courses.txt: Contains course data in the format 'Course Name; Course Time; Course Capacity; Course Teacher'.
+        students.txt: Contains student data in the format 'Student ID, Student Program, Student Name'.
+    """
+
     # Save enrollment data to enrollment.txt, example line: CMPUT 175: 123456
     # Save course data to courses.txt, example line: CMPUT 101; TR 14:00; 156; Marianne Morris
     # Save student data to students.txt, example line: 123456, SCI , Mary Lou Soleiman
 
     # Save enrollment data
-    with open("enrollment_new.txt", "w") as f:
+    with open("enrollment.txt", "w") as f:
         for student in students:
             for course in student.enrolled_courses:
                 f.write(course.name + ": " + student.student_id + "\n")
@@ -406,7 +489,7 @@ def save_data(students, courses):
             course.capacity += 1
 
     # Save course data
-    with open("courses_new.txt", "w") as f:
+    with open("courses.txt", "w") as f:
         for course in courses:
             f.write(course.name + "; " + course.time + "; " + str(course.capacity) + "; " + str(course.teacher) + "\n")
 
@@ -415,7 +498,7 @@ def save_data(students, courses):
             course.capacity -= 1
 
     # Save student data
-    with open("students_new.txt", "w") as f:
+    with open("students.txt", "w") as f:
         for student in students:
             f.write(student.student_id + ", " + student.program + ", " + student.name + "\n")
 
@@ -456,13 +539,24 @@ def generate_timetable(student):
         elif course_days == "TR":
             timetable[time_index][1] = course_name + " " + course_capacity
             timetable[time_index][3] = course_name + " " + course_capacity
-        else:
-            pass
+
+
 
     return timetable
 
 
 def time_to_index(time_str):
+    """
+    Converts a time string in the format 'HH:MM' to an index.
+
+    The function assumes that the time starts at 08:00 and increments in 30 minute intervals. For example, 08:00 corresponds to an index of 0, 08:30 corresponds to an index of 1, 09:00 corresponds to an index of 2, and so on.
+
+    Args:
+        time_str (str): The time string to convert, in the format 'HH:MM'.
+
+    Returns:
+        int: The index corresponding to the given time string.
+    """
     hour = int(time_str.split(":")[0])
     minute = int(time_str.split(":")[1])
     index = (hour - 8) * 2
